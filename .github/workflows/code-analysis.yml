@@ -1,0 +1,67 @@
+name: CodeQL-Analysis
+
+on:
+  workflow_call:
+    inputs:
+      severity_threshold:
+        description: 'Threshold for severity levels (e.g., critical, high, medium, low)'
+        required: true
+        default: 'high'
+        type: string
+
+      score_threshold:
+        description: 'Threshold for number of allowed issues'
+        required: true
+        default: 10
+        type: string
+
+jobs:
+  identify-languages:
+    runs-on: self-hosted
+    outputs:
+      languages: ${{ steps.parse_languages.outputs.languages }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Identify Languages with Linguist
+        run: |
+          docker pull github/linguist
+          docker run --rm -v "$(pwd)":/repo github/linguist --breakdown /repo > linguist_output.txt
+
+      - name: Parse Linguist Output
+        id: parse_languages
+        run: |
+          languages=$(cat linguist_output.txt | grep -Eo 'Python|C#|Go|JavaScript|C\+\+|Ruby|Java|Swift' | tr '\n' ',')
+          languages_json=$(jq -nc --arg languages "$languages" '[$languages | split(",") | .[]]')
+          echo "languages=$languages_json" >> $GITHUB_OUTPUT
+          echo "Identified languages: $languages_json"
+
+  run-codeql:
+    needs: identify-languages
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          config-file: .github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+      - name: Upload CodeQL SARIF results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+
+      - name: Check Severity and Score Thresholds
+        run: |
+          chmod +x ./scripts/check_thresholds.sh
+          ./scripts/check_thresholds.sh results.sarif ${{ inputs.severity_threshold }} ${{ inputs.score_threshold }}

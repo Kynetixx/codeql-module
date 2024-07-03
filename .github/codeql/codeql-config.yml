@@ -1,0 +1,13 @@
+name: "Centralized CodeQL Configuration"
+
+queries:
+  - uses: github/codeql/javascript-queries@v2
+  - uses: github/codeql/python-queries@v2
+  - uses: github/codeql/java-queries@v2
+  - uses: github/codeql/csharp-queries@v2
+  - uses: github/codeql/ruby-queries@v2
+  - uses: github/codeql/go-queries@v2
+  - uses: github/codeql/cpp-queries@v2
+  - uses: github/codeql/swift-queries@v2
+
+# Any custom queries by language
