@@ -17,7 +17,7 @@ on:
 
 jobs:
   identify-languages:
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     outputs:
       languages: ${{ steps.parse_languages.outputs.languages }}
     steps:
