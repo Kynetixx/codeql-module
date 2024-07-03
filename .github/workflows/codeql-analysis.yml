@@ -15,6 +15,7 @@ on:
         default: 10
         type: string
 
+    secrets: inherit
 jobs:
   identify-languages:
     runs-on: self-hosted
