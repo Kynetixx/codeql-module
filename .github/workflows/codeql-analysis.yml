@@ -14,8 +14,10 @@ on:
         required: true
         default: 10
         type: string
+    secrets:
+      GITHUB_TOKEN:
+        required: true
 
-    secrets: inherit
 jobs:
   identify-languages:
     runs-on: self-hosted
