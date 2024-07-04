@@ -56,13 +56,12 @@ jobs:
           path: /home/runner/work/**/*.sarif
 
   Detect-Errors:
+    needs: [identify-languages, run-codeql]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         language: ${{ fromJSON(needs.identify-languages.outputs.languages) }}
-    needs:
-      - run-codeql
     steps:
     - name: Download Sarif Report
       uses: actions/download-artifact@v2
