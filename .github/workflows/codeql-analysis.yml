@@ -47,7 +47,7 @@ jobs:
         run: |
           mkdir -p codeql-results
           cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results.sarif
-          cd codeql-results
+          cd codeql-results/results.sarif
           ls -la
 
       - name: Compute Vulnerability Score
