@@ -14,6 +14,10 @@ on:
         required: true
         default: 10
         type: string
+    secrets:
+      GITHUB_TOKEN:
+        description: "GitHub token"
+        required: true
 
 jobs:
   identify-languages:
