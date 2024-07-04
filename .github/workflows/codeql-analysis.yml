@@ -55,7 +55,7 @@ jobs:
         run: |
           # Parse the SARIF file to extract vulnerabilities
           results_path="codeql-results/results.sarif"
-          cat codeql-results/results.sarif
+          cat codeql-results/results.sarif/python.sarif
           critical=$(jq '[.runs[].results[] | select(.level == "error") | select(.properties.tags[] == "security") | select(.properties.severity == "critical")] | length' $results_path)
           high=$(jq '[.runs[].results[] | select(.level == "error") | select(.properties.tags[] == "security") | select(.properties.severity == "high")] | length' $results_path)
           medium=$(jq '[.runs[].results[] | select(.level == "warning") | select(.properties.tags[] == "security") | select(.properties.severity == "medium")] | length' $results_path)
