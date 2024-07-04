@@ -54,7 +54,8 @@ jobs:
         id: parse-sarif
         run: |
           # Path to the SARIF file for the current language
-          results_path="codeql-results/results-${{ matrix.language }}.sarif"
+          language=$(echo "${{ matrix.language }}" | tr '[:upper:]' '[:lower:]')
+          results_path="codeql-results/results-${{ matrix.language }}.sarif/${language}.sarif"
           
           # Parse the SARIF file to extract vulnerabilities and count based on severity levels
           critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
