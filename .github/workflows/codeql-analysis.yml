@@ -46,7 +46,7 @@ jobs:
         with:
           output: ./results
 
-     - name: List SARIF Files
+      - name: List SARIF Files
         run: ls -al ./results
 
       - name: Upload CodeQL SARIF results
