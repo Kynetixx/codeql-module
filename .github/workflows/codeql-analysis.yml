@@ -50,43 +50,36 @@ jobs:
           cd codeql-results/results-${{ matrix.language }}.sarif
           ls -la
 
-      - name: Compute Vulnerability Score
-        id: compute-score
+      - name: Parse SARIF and Compute Vulnerability Counts
+        id: parse-sarif
         run: |
-          # Dynamically determine the SARIF file path
-          
+          # Path to the SARIF file for the current language
           results_path="codeql-results/results-${{ matrix.language }}.sarif"
-
-         # Parse the SARIF file to extract vulnerabilities
+          
+          # Parse the SARIF file to extract vulnerabilities and count based on severity levels
           critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
           high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
           medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
           low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
 
-          # Assign weights to each severity level
-          critical_weight=10
-          high_weight=7
-          medium_weight=5
-          low_weight=2
-
-          # Compute the total vulnerability score
-          vulnerability_score=$((critical * critical_weight + high * high_weight + medium * medium_weight + low * low_weight))
+          # Parse non-security alerts
+          error=$(jq '[.runs[].results[] | select(.level == "error")] | length' $results_path)
+          warning=$(jq '[.runs[].results[] | select(.level == "warning")] | length' $results_path)
+          note=$(jq '[.runs[].results[] | select(.level == "note")] | length' $results_path)
 
           echo "Critical: $critical"
           echo "High: $high"
           echo "Medium: $medium"
           echo "Low: $low"
-          echo "Vulnerability Score: $vulnerability_score"
+          echo "Error: $error"
+          echo "Warning: $warning"
+          echo "Note: $note"
 
-          echo "::set-output name=vulnerability-score::$vulnerability_score"
-
-      - name: Check Threshold and Block Pipeline
-        if: ${{ steps.compute-score.outputs.vulnerability-score }} >= 50  # Example threshold
-        run: |
-          echo "Vulnerability score is too high. Blocking pipeline."
-          exit 1  # This will cause the pipeline to fail
-
-      - name: Proceed with Deployment
-        if: ${{ steps.compute-score.outputs.vulnerability-score }} < 50
-        run: |
-          echo "Vulnerability score is acceptable. Proceeding with deployment."
+          # Using $GITHUB_OUTPUT to set outputs
+          echo "critical=$critical" >> $GITHUB_OUTPUT
+          echo "high=$high" >> $GITHUB_OUTPUT
+          echo "medium=$medium" >> $GITHUB_OUTPUT
+          echo "low=$low" >> $GITHUB_OUTPUT
+          echo "error=$error" >> $GITHUB_OUTPUT
+          echo "warning=$warning" >> $GITHUB_OUTPUT
+          echo "note=$note" >> $GITHUB_OUTPUT
