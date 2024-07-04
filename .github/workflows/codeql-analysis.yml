@@ -52,7 +52,7 @@ jobs:
       - name: Upload CodeQL SARIF results
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: ./results/results.sarif
+          sarif_file: ${{ matrix.language }}.sarif
 
       - name: Check Severity and Score Thresholds
         run: |
