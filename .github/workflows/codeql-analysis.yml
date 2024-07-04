@@ -46,7 +46,7 @@ jobs:
       - name: Download Analysis Results
         run: |
           mkdir -p codeql-results
-          cp ${{ steps.run-codeql.outputs.sarif }} codeql-results/results.sarif
+          cp ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results.sarif
 
       - name: Compute Vulnerability Score
         id: compute-score
