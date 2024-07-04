@@ -31,7 +31,7 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        language: ${{ fromJSON(needs.run.outputs.languages) }}
+        language: ${{ fromJSON(needs.identify-languages.outputs.languages) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
