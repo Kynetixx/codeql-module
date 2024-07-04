@@ -32,6 +32,11 @@ jobs:
           echo "Languages: $response"
           main_language=$(echo $response | jq -r 'to_entries | max_by(.value) | .key')
           echo "main_language=$main_language" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Debug Fetch Languages
+        run: echo "Main language: ${{ steps.fetch-languages.outputs.main_language }}"
 
       - name: Set Main Language Output
         id: set-main-language
