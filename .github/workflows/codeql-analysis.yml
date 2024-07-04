@@ -44,16 +44,12 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         with:
-          output: ./results
-
-      - name: List SARIF Files
-        run: ls -al ./results
+          category: ${{ matrix.language }}
 
       - name: Upload Sarif Report to Workflow
-        uses: actions/upload-artifact@v2
+        uses: github/codeql-action/upload-sarif@v2
         with:
-          name: sarif-report-${{ matrix.language }}
-          path: /home/runner/work/**/*.sarif
+          sarif_file: ${{ github.workspace }}/codeql-sarif/${{ matrix.language }}.sarif
 
   Detect-Errors:
     needs: [identify-languages, run-codeql]
