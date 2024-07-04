@@ -49,12 +49,60 @@ jobs:
       - name: List SARIF Files
         run: ls -al ./results
 
-      - name: Upload CodeQL SARIF results
-        uses: github/codeql-action/upload-sarif@v2
+      - name: Upload Sarif Report to Workflow
+        uses: actions/upload-artifact@v2
         with:
-          sarif_file: ../results/results.sarif
+          name: sarif-report-${{ matrix.language }}
+          path: /home/runner/work/**/*.sarif
 
-      - name: Check Severity and Score Thresholds
-        run: |
-          chmod +x ./scripts/check_thresholds.sh
-          ./scripts/check_thresholds.sh results.sarif ${{ inputs.severity_threshold }} ${{ inputs.score_threshold }}
+  Detect-Errors:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.identify-languages.outputs.languages) }}
+    needs:
+      - run-codeql
+    steps:
+    - name: Download Sarif Report
+      uses: actions/download-artifact@v2
+      with:
+        name: sarif-report
+
+    - name: Detect Errors
+      run: |
+        repo=$(echo ${{ github.repository }} | awk -F'/' '{print $2}')
+        results=$(cat $repo/results/${{ matrix.language }}-builtin.sarif | jq -r '.runs[].results[].ruleId')
+
+        resultsArray=($results)
+        
+        echo "${resultsArray[*]}"
+
+        errorCount=0
+        warningCount=0
+        noteCount=0
+
+        for var in "${resultsArray[@]}"
+        do
+          severity=$(cat $repo/results/${{ matrix.language }}-builtin.sarif | jq -r '.runs[].tool.driver.rules[] | select(.id=="'$var'").properties."problem.severity"')
+          echo "${var} | $severity"
+          if [ "$severity" == "warning" ]; then let warningCount+=1; fi
+          if [ "$severity" == "error" ]; then let errorount+=1; fi
+          if [ "$severity" == "note" ]; then let noteount+=1; fi
+        done
+
+        echo ""
+        echo "Error Count: $errorCount"
+        echo "Warning Count: $warningCount"
+        echo "Note Count: $noteCount"
+        echo ""
+
+        if (( $errorCount > 0 )); then
+            echo "errors found - failing detect error check..."
+            exit -1
+        fi
+
+        if (( $warningCount > 0 )); then
+            echo "warnings found - failing detect warning check..."
+            exit -1
+        fi
