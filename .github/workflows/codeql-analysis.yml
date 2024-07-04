@@ -29,6 +29,11 @@ jobs:
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     strategy:
       matrix:
         language: ${{ fromJSON(needs.identify-languages.outputs.languages) }}
@@ -40,6 +45,9 @@ jobs:
         uses: github/codeql-action/init@v2
         with:
           languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
