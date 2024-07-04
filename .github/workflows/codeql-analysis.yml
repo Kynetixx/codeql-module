@@ -46,19 +46,22 @@ jobs:
       - name: Download Analysis Results
         run: |
           mkdir -p codeql-results
-          cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results.sarif
-          cd codeql-results/results.sarif
+          cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results-${{ matrix.language }}.sarif
+          cd codeql-results/results-${{ matrix.language }}.sarif
           ls -la
 
       - name: Compute Vulnerability Score
         id: compute-score
         run: |
-          # Parse the SARIF file to extract vulnerabilities
-          results_path="codeql-results/results.sarif/python.sarif"
-          critical=$(jq '[.runs[].results[] | select(.level == "error") | select(.properties.tags[] == "security") | select(.properties.severity == "critical")] | length' $results_path)
-          high=$(jq '[.runs[].results[] | select(.level == "error") | select(.properties.tags[] == "security") | select(.properties.severity == "high")] | length' $results_path)
-          medium=$(jq '[.runs[].results[] | select(.level == "warning") | select(.properties.tags[] == "security") | select(.properties.severity == "medium")] | length' $results_path)
-          low=$(jq '[.runs[].results[] | select(.level == "note") | select(.properties.tags[] == "security") | select(.properties.severity == "low")] | length' $results_path)
+          # Dynamically determine the SARIF file path
+          
+          results_path="codeql-results/results-${{ matrix.language }}.sarif"
+
+         # Parse the SARIF file to extract vulnerabilities
+          critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
+          high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
+          medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
+          low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
 
           # Assign weights to each severity level
           critical_weight=10
