@@ -19,30 +19,27 @@ jobs:
   identify-languages:
     runs-on: ubuntu-latest
     outputs:
-      languages: ${{ steps.parse_languages.outputs.languages }}
+      main_language: ${{ steps.set-main-language.outputs.main_language }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Identify Languages with Linguist
+      - name: Fetch Repository Languages
+        id: fetch-languages
         run: |
-          docker pull github/linguist
-          docker run --rm -v "$(pwd)":/repo github/linguist --breakdown /repo > linguist_output.txt
+          repo=${{ github.repository }}
+          response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://github.enterprise.url/api/v3/repos/$repo/languages)
+          echo "Languages: $response"
+          main_language=$(echo $response | jq -r 'to_entries | max_by(.value) | .key')
+          echo "main_language=$main_language" >> $GITHUB_OUTPUT
 
-      - name: Parse Linguist Output
-        id: parse_languages
-        run: |
-          languages=$(cat linguist_output.txt | grep -Eo 'Python|C#|Go|JavaScript|C\+\+|Ruby|Java|Swift' | tr '\n' ',')
-          languages_json=$(jq -nc --arg languages "$languages" '[$languages | split(",") | .[]]')
-          echo "languages=$languages_json" >> $GITHUB_OUTPUT
-          echo "Identified languages: $languages_json"
+     - name: Set Main Language Output
+      id: set-main-language
+      run: echo "main_language=${{ steps.fetch-languages.outputs.main_language }}"
 
   run-codeql:
     needs: identify-languages
     runs-on: self-hosted
-    strategy:
-      matrix:
-        language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -50,7 +47,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
-          languages: ${{ matrix.language }}
+          languages: ${{ needs.fetch-main-language.outputs.main_language }}
           config-file: .github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
