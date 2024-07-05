@@ -50,5 +50,7 @@ jobs:
 
       - name: Parse SARIF and Compute Vulnerability Counts
         run: |
-          chmod +x ${{ github.workspace }}/scripts/parse_sarif.sh
-          ${{ github.workspace }}/scripts/parse_sarif.sh ${{ matrix.language }}
+          pwd
+          ls -la
+          chmod +x scripts/parse_sarif.sh
+          scripts/parse_sarif.sh ${{ matrix.language }}
