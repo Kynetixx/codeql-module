@@ -2,6 +2,13 @@ name: CodeQL-Analysis
 
 on:
   workflow_call:
+    outputs:
+      critical_vulnerabilities:
+        description: "Number of critical vulnerabilities"
+        value: ${{ steps.parse-sarif.outputs.critical }}
+      high_vulnerabilities:
+        description: "Number of high vulnerabilities"
+        value: ${{ steps.parse-sarif.outputs.high }}
 
 jobs:
   identify-languages:
@@ -47,9 +54,6 @@ jobs:
         run: |
           mkdir -p codeql-results
           cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results-${{ matrix.language }}.sarif
-
-      - name: Adding markdown
-        run: echo '### Hello world! 🚀' >> $GITHUB_STEP_SUMMARY
 
       - name: Parse SARIF and Compute Vulnerability Counts
         id: parse-sarif
