@@ -5,10 +5,10 @@ on:
     outputs:
       critical_vulnerabilities:
         description: "Number of critical vulnerabilities"
-        value: ${{ steps.parse-sarif.outputs.critical }}
+        value: ${{ jobs.run-codeql.outputs.critical }}
       high_vulnerabilities:
         description: "Number of high vulnerabilities"
-        value: ${{ steps.parse-sarif.outputs.high }}
+        value: ${{ jobs.run-codeql.outputs.high }}
 
 jobs:
   identify-languages:
@@ -24,6 +24,9 @@ jobs:
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
+    outputs:
+      high:  ${{ steps.parse-sarif.outputs.high }}
+      critical: ${{ steps.parse-sarif.outputs.critical }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       security-events: write
