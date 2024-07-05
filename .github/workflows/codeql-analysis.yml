@@ -49,8 +49,55 @@ jobs:
           cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results-${{ matrix.language }}.sarif
 
       - name: Parse SARIF and Compute Vulnerability Counts
+        id: parse-sarif
         run: |
-          pwd
-          ls -la
-          chmod +x scripts/parse_sarif.sh
-          scripts/parse_sarif.sh ${{ matrix.language }}
+          # Path to the SARIF file for the current language
+          language=$(echo "${{ matrix.language }}" | tr '[:upper:]' '[:lower:]')
+          results_path="codeql-results/results-${{ matrix.language }}.sarif/${language}.sarif"
+          
+          # Parse the SARIF file to extract vulnerabilities and count based on severity levels
+          critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
+          high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
+          medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
+          low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
+
+          # Parse non-security alerts
+          error=$(jq '[.runs[].results[] | select(.level == "error")] | length' $results_path)
+          warning=$(jq '[.runs[].results[] | select(.level == "warning")] | length' $results_path)
+          note=$(jq '[.runs[].results[] | select(.level == "note")] | length' $results_path)
+
+          echo "Critical: $critical"
+          echo "High: $high"
+          echo "Medium: $medium"
+          echo "Low: $low"
+          echo "Error: $error"
+          echo "Warning: $warning"
+          echo "Note: $note"
+
+          # Using $GITHUB_OUTPUT to set outputs
+          echo "critical=$critical" >> $GITHUB_OUTPUT
+          echo "high=$high" >> $GITHUB_OUTPUT
+          echo "medium=$medium" >> $GITHUB_OUTPUT
+          echo "low=$low" >> $GITHUB_OUTPUT
+          echo "error=$error" >> $GITHUB_OUTPUT
+          echo "warning=$warning" >> $GITHUB_OUTPUT
+          echo "note=$note" >> $GITHUB_OUTPUT
+
+          # Extract detailed vulnerabilities and generate Markdown table
+          vulnerabilities=$(jq -r '[.runs[].results[] | select(.properties["security-severity"] == 0.0) | {severity: .properties["security-severity"], message: .message.text, level: .level}]' $results_path)
+
+          echo "## CodeQL Vulnerability Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Severity | Level | Message |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "$vulnerabilities" | jq -r '.[] | "| \(.severity) | \(.level) | \(.message) |"' >> $GITHUB_STEP_SUMMARY
+
+          echo "## Vulnerability Counts" >> $GITHUB_STEP_SUMMARY
+          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Critical | $critical |" >> $GITHUB_STEP_SUMMARY
+          echo "| High | $high |" >> $GITHUB_STEP_SUMMARY
+          echo "| Medium | $medium |" >> $GITHUB_STEP_SUMMARY
+          echo "| Low | $low |" >> $GITHUB_STEP_SUMMARY
+          echo "| Error | $error |" >> $GITHUB_STEP_SUMMARY
+          echo "| Warning | $warning |" >> $GITHUB_STEP_SUMMARY
+          echo "| Note | $note |" >> $GITHUB_STEP_SUMMARY
