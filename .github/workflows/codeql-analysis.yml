@@ -48,6 +48,9 @@ jobs:
           mkdir -p codeql-results
           cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results-${{ matrix.language }}.sarif
 
+      - name: Adding markdown
+        run: echo '### Hello world! 🚀' >> $GITHUB_STEP_SUMMARY
+
       - name: Parse SARIF and Compute Vulnerability Counts
         id: parse-sarif
         run: |
@@ -84,7 +87,7 @@ jobs:
           echo "note=$note" >> $GITHUB_OUTPUT
 
           # Extract detailed vulnerabilities and generate Markdown table
-          vulnerabilities=$(jq -r '[.runs[].results[] | select(.properties["security-severity"] == 0.0) | {severity: .properties["security-severity"], message: .message.text, level: .level}]' $results_path)
+          vulnerabilities=$(jq -r '[.runs[].results[] | select(.properties["security-severity"] >= 0.1) | {severity: .properties["security-severity"], message: .message.text, level: .level}]' $results_path)
 
           echo "## CodeQL Vulnerability Report" >> $GITHUB_STEP_SUMMARY
           echo "| Severity | Level | Message |" >> $GITHUB_STEP_SUMMARY
