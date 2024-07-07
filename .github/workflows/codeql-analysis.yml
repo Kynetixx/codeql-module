@@ -2,13 +2,6 @@ name: CodeQL-Analysis
 
 on:
   workflow_call:
-    outputs:
-      critical_vulnerabilities:
-        description: "Number of critical vulnerabilities"
-        value: ${{ jobs.run-codeql.outputs.critical }}
-      high_vulnerabilities:
-        description: "Number of high vulnerabilities"
-        value: ${{ jobs.run-codeql.outputs.high }}
 
 jobs:
   identify-languages:
@@ -24,9 +17,6 @@ jobs:
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
-    outputs:
-      high:  ${{ steps.parse-sarif.outputs.high }}
-      critical: ${{ steps.parse-sarif.outputs.critical }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       security-events: write
@@ -58,10 +48,9 @@ jobs:
           mkdir -p codeql-results
           cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results-${{ matrix.language }}.sarif
 
-      - name: Parse SARIF and Compute Vulnerability Counts
+      - name: Parse SARIF and Compute Vulnerability Score
         id: parse-sarif
         run: |
-          # Path to the SARIF file for the current language
           language=$(echo "${{ matrix.language }}" | tr '[:upper:]' '[:lower:]')
           results_path="codeql-results/results-${{ matrix.language }}.sarif/${language}.sarif"
           
@@ -71,43 +60,25 @@ jobs:
           medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
           low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
 
-          # Parse non-security alerts
-          error=$(jq '[.runs[].results[] | select(.level == "error")] | length' $results_path)
-          warning=$(jq '[.runs[].results[] | select(.level == "warning")] | length' $results_path)
-          note=$(jq '[.runs[].results[] | select(.level == "note")] | length' $results_path)
+          # Calculate the vulnerability score
+          base_score=100
+          score=$((base_score - (critical * 5) - (high * 4) - (medium * 3) - (low * 2)))
 
           echo "Critical: $critical"
           echo "High: $high"
           echo "Medium: $medium"
           echo "Low: $low"
-          echo "Error: $error"
-          echo "Warning: $warning"
-          echo "Note: $note"
+          echo "Vulnerability Score: $score"
 
           # Using $GITHUB_OUTPUT to set outputs
-          echo "critical=$critical" >> $GITHUB_OUTPUT
-          echo "high=$high" >> $GITHUB_OUTPUT
-          echo "medium=$medium" >> $GITHUB_OUTPUT
-          echo "low=$low" >> $GITHUB_OUTPUT
-          echo "error=$error" >> $GITHUB_OUTPUT
-          echo "warning=$warning" >> $GITHUB_OUTPUT
-          echo "note=$note" >> $GITHUB_OUTPUT
+          echo "score=$score" >> $GITHUB_OUTPUT
 
-          # Extract detailed vulnerabilities and generate Markdown table
-          vulnerabilities=$(jq -r '[.runs[].results[] | select(.properties["security-severity"] >= 0.1) | {severity: .properties["security-severity"], message: .message.text, level: .level}]' $results_path)
-
-          echo "## CodeQL Vulnerability Report" >> $GITHUB_STEP_SUMMARY
-          echo "| Severity | Level | Message |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
-          echo "$vulnerabilities" | jq -r '.[] | "| \(.severity) | \(.level) | \(.message) |"' >> $GITHUB_STEP_SUMMARY
-
-          echo "## Vulnerability Counts" >> $GITHUB_STEP_SUMMARY
+          # Generate Markdown table
+          echo "## CodeQL Vulnerability Score" >> $GITHUB_STEP_SUMMARY
           echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
           echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
           echo "| Critical | $critical |" >> $GITHUB_STEP_SUMMARY
           echo "| High | $high |" >> $GITHUB_STEP_SUMMARY
           echo "| Medium | $medium |" >> $GITHUB_STEP_SUMMARY
           echo "| Low | $low |" >> $GITHUB_STEP_SUMMARY
-          echo "| Error | $error |" >> $GITHUB_STEP_SUMMARY
-          echo "| Warning | $warning |" >> $GITHUB_STEP_SUMMARY
-          echo "| Note | $note |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
