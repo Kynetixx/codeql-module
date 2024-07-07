@@ -2,7 +2,10 @@ name: CodeQL-Analysis
 
 on:
   workflow_call:
-
+    outputs:
+      score:
+        description: "Total score"
+        value: ${{ jobs.run-codeql.outputs.score }}
 jobs:
   identify-languages:
     runs-on: ubuntu-latest
@@ -17,6 +20,8 @@ jobs:
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
+    outputs:
+      score:  ${{ steps.parse-sarif.outputs.score }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       security-events: write
