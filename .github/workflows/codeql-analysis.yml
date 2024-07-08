@@ -8,7 +8,7 @@ on:
         value: ${{ jobs.run-codeql.outputs.score }}
 
 jobs:
-  logLatestRelease:
+  identify-languages:
     runs-on: ubuntu-latest
     steps:
       - uses: octokit/request-action@v2.x
@@ -16,7 +16,7 @@ jobs:
         with:
           route: GET /repos/{owner}/{repo}/languages
           owner: octokit
-          repo: request-action
+          repo: ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
