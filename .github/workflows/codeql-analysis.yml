@@ -10,6 +10,13 @@ on:
 jobs:
   identify-languages:
     runs-on: ubuntu-latest
+    outputs:
+      languages: ${{ steps.list-languages.outputs.languages }}
+    steps:
+      - uses: austenstone/list-repository-languages@main
+        id: list-languages
+        with:
+          codeql: 'true'
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
