@@ -29,7 +29,7 @@ jobs:
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
-          languages=$(echo "${{ toJson(steps.get_languages.outputs.data) }}" | jq -r '.[]')
+          languages=$(echo "${{(steps.get_languages.outputs.data) }}" | jq -r '.[]')
           echo "Languages: $languages"
           echo "languages=[$languages]" >> $GITHUB_OUTPUT
   
