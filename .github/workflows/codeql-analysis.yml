@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        language: ['python', 'swift', 'javascript']
+        language: ['python', 'swift', 'javascript', 'objective-c', 'ruby', 'typescript', 'java', 'kotlin']
     permissions:
       security-events: write
       actions: read
