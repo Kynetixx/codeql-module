@@ -70,7 +70,16 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
+      - name: Custom Build for Swift
+        if: matrix.language == 'swift'
+        run: |
+          echo "Running custom build steps for Swift"
+          # Add your custom build steps for Swift here
+          # Example:
+          # swift build
+
       - name: Autobuild
+        if: matrix.language != 'swift'
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
