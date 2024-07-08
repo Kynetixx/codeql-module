@@ -29,8 +29,9 @@ jobs:
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
-          languages=${{ toJson(steps.get_languages.outputs.data) }};
+          languages=$(echo "${{ toJson(steps.get_languages.outputs.data) }}" | jq -r '.[]')
           echo "Languages: $languages"
+          echo "languages=[$languages]" >> $GITHUB_OUTPUT
   
   # run-codeql:
   #   runs-on: ubuntu-latest
