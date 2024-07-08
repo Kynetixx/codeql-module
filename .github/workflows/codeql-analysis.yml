@@ -34,10 +34,24 @@ jobs:
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
-          const codeqlLanguageMapping=require('../codeql-language-mapping.js');
+          const codeqlLanguageMapping=JSON.stringify({
+              "csharp": "csharp",
+              "c#": "csharp",
+              "cpp": "cpp",
+              "c": "cpp",
+              "c++": "cpp",
+              "go": "go",
+              "java": "java",
+              "javascript": "javascript",
+              "typescript": "javascript",
+              "python": "python",
+              "ruby": "ruby",
+              "swift": "swift"
+          });
+          console.log('cc', codeqlLanguageMapping)
           const langResponse=${{ toJson(steps.get_languages.outputs.data) }};
           let languages=Object.keys(langResponse).filter(lang => codeqlLanguageMapping[lang]);
-          console.log(`::set-output name=languages::${JSON.stringify(languages)}`);
+    
 
       - name: Set languages output
         id: set_languages
