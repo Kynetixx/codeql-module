@@ -26,13 +26,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Load language mapping
+        id: load_mapping
+        run: |
+          mapping=$(cat .github/codeqlLanguageMapping.json)
+          echo "language_mapping=$mapping" >> $GITHUB_OUTPUT
+
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
-          declare -A language_map=( ["Python"]="python" ["JavaScript"]="javascript" ["TypeScript"]="javascript-typescript" ["C"]="c" ["Ruby"]="ruby" ["Swift"]="swift" ["Kotlin"]="kotlin" ["Java"]="java-kotlin" )
-          filtered_languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]' | while read lang; do
-            if [[ -n "${language_map[$lang]}" ]]; then
-              echo "${language_map[$lang]}"
+          mapping='${{ steps.load_mapping.outputs.language_mapping }}'
+          languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]')
+          filtered_languages=$(echo "$languages" | while read lang; do
+            mapped_lang=$(echo "$mapping" | jq -r --arg lang "$lang" '.[$lang]')
+            if [[ "$mapped_lang" != "null" ]]; then
+              echo "$mapped_lang"
             fi
           done | jq -R . | jq -s .)
           echo "Filtered languages: $filtered_languages"
