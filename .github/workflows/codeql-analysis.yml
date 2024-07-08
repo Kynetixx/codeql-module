@@ -26,40 +26,36 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Define language mapping
-        id: define_mapping
-        run: |
-          echo '{
-            "c": "cpp",
-            "java": "java",
-            "javascript": "javascript",
-            "typescript": "typescript",
-            "python": "python",
-            "ruby": "ruby",
-            "swift": "swift",
-            "objective-c": "cpp",
-          }' > codeqlLanguageMapping.json
-
-      - name: Debug language data
-        run: |
-          echo "Language data: ${{ steps.get_languages.outputs.data }}"
-
-      - name: Filter languages based on mapping
+      - name: Define language mapping and filter languages
         id: filter_languages
-        run: |
-          mapping=$(cat codeqlLanguageMapping.json)
-          echo "Mapping: $mapping"
-          languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]' | tr '[:upper:]' '[:lower:]')
-          echo "Languages: $languages"
-          filtered_languages=$(for lang in $languages; do
-            trimmed_lang=$(echo "$lang" | xargs)  # Trim whitespace
-            mapped_lang=$(echo "$mapping" | jq -r --arg lang "$trimmed_lang" '.[$lang]')
-            if [[ "$mapped_lang" != "null" ]]; then
-              echo "$mapped_lang"
-            fi
-          done | jq -R . | jq -s .)
-          echo "Filtered languages: $filtered_languages"
-          echo "filtered_languages=$filtered_languages" >> $GITHUB_OUTPUT
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const languageMapping = {
+              "csharp": "csharp",
+              "c#": "csharp",
+              "cpp": "cpp",
+              "c": "cpp",
+              "c++": "cpp",
+              "go": "go",
+              "java": "java",
+              "javascript": "javascript",
+              "typescript": "javascript",
+              "python": "python",
+              "ruby": "ruby",
+              "swift": "swift",
+              "objective-c": "cpp",
+              "html": "javascript",
+              "css": "javascript"
+            };
+
+            const languagesData = JSON.parse(process.env.LANGUAGES_DATA);
+            const languages = Object.keys(languagesData).map(lang => lang.toLowerCase().trim());
+            const filteredLanguages = [...new Set(languages.map(lang => languageMapping[lang]).filter(Boolean))];
+
+            core.setOutput('filtered_languages', JSON.stringify(filteredLanguages));
+        env:
+          LANGUAGES_DATA: ${{ steps.get_languages.outputs.data }}
 
   run-codeql:
     needs: identify-languages
