@@ -58,8 +58,9 @@ jobs:
           echo "Mapping: $mapping"
           languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]' | tr '[:upper:]' '[:lower:]')
           echo "Languages: $languages"
-          filtered_languages=$(echo "$languages" | while read lang; do
-            mapped_lang=$(echo "$mapping" | jq -r --arg lang "$lang" '.[$lang]')
+          filtered_languages=$(for lang in $languages; do
+            trimmed_lang=$(echo "$lang" | xargs)  # Trim whitespace
+            mapped_lang=$(echo "$mapping" | jq -r --arg lang "$trimmed_lang" '.[$lang]')
             if [[ "$mapped_lang" != "null" ]]; then
               echo "$mapped_lang"
             fi
