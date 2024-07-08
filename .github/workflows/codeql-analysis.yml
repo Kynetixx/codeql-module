@@ -10,8 +10,14 @@ on:
 jobs:
   identify-languages:
     runs-on: ubuntu-latest
+    outputs:
+      languages: ${{ steps.get_languages.outputs.languages }}
     steps:
-      - uses: octokit/request-action@v2.x
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get languages
+        uses: octokit/request-action@v2.x
         id: get_languages
         with:
           route: GET /repos/{owner}/{repo}/languages
@@ -20,7 +26,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
-      - run: "echo latest release: '${{ steps.get_languages.outputs.data }}'"
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Filter languages based on mapping
+        id: filter_languages
+        run: |
+          languages=$(echo "${{ steps.get_languages.outputs.data }}" | jq -r 'keys[]' | while read lang; do
+            mapped_lang=$(node -e "console.log(require('../codeql-language-mapping.js')['$lang'])")
+            if [ ! -z "$mapped_lang" ]; then
+              echo "$mapped_lang"
+            fi
+          done | sort -u)
+          echo "::set-output name=languages::${languages}"
+
+      - name: Set languages output
+        id: set_languages
+        run: echo "::set-output name=languages::${{ steps.filter_languages.outputs.languages }}"
 
   run-codeql:
     runs-on: ubuntu-latest
