@@ -34,9 +34,9 @@ jobs:
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
-          const codeqlLanguageMapping = require('../codeql-language-mapping.js');
-          const langResponse = ${{ toJson(steps.get_languages.outputs.data) }};
-          let languages = Object.keys(langResponse).filter(lang => codeqlLanguageMapping[lang]);
+          const codeqlLanguageMapping=require('../codeql-language-mapping.js');
+          const langResponse=${{ toJson(steps.get_languages.outputs.data) }};
+          let languages=Object.keys(langResponse).filter(lang => codeqlLanguageMapping[lang]);
           console.log(`::set-output name=languages::${JSON.stringify(languages)}`);
 
       - name: Set languages output
