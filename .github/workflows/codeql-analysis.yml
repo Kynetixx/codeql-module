@@ -44,11 +44,17 @@ jobs:
             "swift": "swift"
           }' > codeqlLanguageMapping.json
 
+      - name: Debug language data
+        run: |
+          echo "Language data: ${{ steps.get_languages.outputs.data }}"
+
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
           mapping=$(cat codeqlLanguageMapping.json)
+          echo "Mapping: $mapping"
           languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]')
+          echo "Languages: $languages"
           filtered_languages=$(echo "$languages" | while read lang; do
             mapped_lang=$(echo "$mapping" | jq -r --arg lang "$lang" '.[$lang]')
             if [[ "$mapped_lang" != "null" ]]; then
