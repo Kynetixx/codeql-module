@@ -32,21 +32,15 @@ jobs:
         with:
           script: |
             const languageMapping = {
-              "csharp": "csharp",
-              "c#": "csharp",
-              "cpp": "cpp",
               "c": "cpp",
-              "c++": "cpp",
               "go": "go",
               "java": "java",
               "javascript": "javascript",
-              "typescript": "javascript",
+              "typescript": "typescript",
               "python": "python",
               "ruby": "ruby",
               "swift": "swift",
-              "objective-c": "cpp",
-              "html": "javascript",
-              "css": "javascript"
+              "objective-c": "cpp"
             };
 
             const languagesData = JSON.parse(process.env.LANGUAGES_DATA);
