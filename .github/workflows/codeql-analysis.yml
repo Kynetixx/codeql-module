@@ -41,7 +41,10 @@ jobs:
             "typescript": "javascript",
             "python": "python",
             "ruby": "ruby",
-            "swift": "swift"
+            "swift": "swift",
+            "objective-c": "cpp",
+            "html": "javascript",
+            "css": "javascript"
           }' > codeqlLanguageMapping.json
 
       - name: Debug language data
@@ -53,7 +56,7 @@ jobs:
         run: |
           mapping=$(cat codeqlLanguageMapping.json)
           echo "Mapping: $mapping"
-          languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]')
+          languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]' | tr '[:upper:]' '[:lower:]')
           echo "Languages: $languages"
           filtered_languages=$(echo "$languages" | while read lang; do
             mapped_lang=$(echo "$mapping" | jq -r --arg lang "$lang" '.[$lang]')
