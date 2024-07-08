@@ -1,17 +1,33 @@
 name: CodeQL-Analysis
 
 on:
-  workflow_call:
-    outputs:
-      score:
-        description: "Total score"
-        value: ${{ jobs.run-codeql.outputs.score }}
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  run-codeql:
+  identify-languages:
     runs-on: ubuntu-latest
     outputs:
-      score: ${{ steps.compute-score.outputs.score }}
+      languages: ${{ steps.detect-languages.outputs.languages }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Identify Languages
+        id: detect-languages
+        run: |
+          languages=$(github/codeql-action/autobuild --check-language | awk -F' ' '{print $2}')
+          echo "Detected languages: $languages"
+          echo "languages=${languages}" >> $GITHUB_OUTPUT
+
+  run-codeql:
+    needs: identify-languages
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: ${{ fromJSON(needs.identify-languages.outputs.languages) }}
     permissions:
       security-events: write
       actions: read
@@ -22,7 +38,8 @@ jobs:
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
-
+        with:
+          languages: ${{ matrix.language }}
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
@@ -31,10 +48,11 @@ jobs:
         id: run-codeql
         uses: github/codeql-action/analyze@v3
         with:
+          category: ${{ matrix.language }}
           output: sarif
 
       - name: Parse SARIF and Compute Vulnerability Score
-        id: compute-score
+        id: parse-sarif
         run: |
           results_path=$(echo ${{ steps.run-codeql.outputs.sarif }} | jq -r '.["results.sarif"]')
 
