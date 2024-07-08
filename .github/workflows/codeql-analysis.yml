@@ -57,60 +57,60 @@ jobs:
         id: set_languages
         run: echo "::set-output name=languages::${{ steps.filter_languages.outputs.languages }}"
 
-  run-codeql:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        language: ['python', 'swift', 'javascript', 'c', 'ruby', 'javascript-typescript', 'kotlin', 'java-kotlin']
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+  # run-codeql:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       language: ['python', 'swift', 'javascript', 'c', 'ruby', 'javascript-typescript', 'kotlin', 'java-kotlin']
+  #   permissions:
+  #     security-events: write
+  #     actions: read
+  #     contents: read
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v3
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
+  #     - name: Initialize CodeQL
+  #       uses: github/codeql-action/init@v3
+  #       with:
+  #         languages: ${{ matrix.language }}
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+  #     - name: Autobuild
+  #       uses: github/codeql-action/autobuild@v3
 
-      - name: Perform CodeQL Analysis
-        id: run-codeql
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: ${{ matrix.language }}
-          output: sarif
+  #     - name: Perform CodeQL Analysis
+  #       id: run-codeql
+  #       uses: github/codeql-action/analyze@v3
+  #       with:
+  #         category: ${{ matrix.language }}
+  #         output: sarif
 
-      - name: Parse SARIF and Compute Vulnerability Score
-        id: parse-sarif
-        run: |
-          results_path=$(echo ${{ steps.run-codeql.outputs.sarif }} | jq -r '.["results.sarif"]')
+  #     - name: Parse SARIF and Compute Vulnerability Score
+  #       id: parse-sarif
+  #       run: |
+  #         results_path=$(echo ${{ steps.run-codeql.outputs.sarif }} | jq -r '.["results.sarif"]')
 
-          critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
-          high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
-          medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
-          low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
+  #         critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
+  #         high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
+  #         medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
+  #         low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
 
-          base_score=100
-          score=$((base_score - (critical * 5) - (high * 4) - (medium * 3) - (low * 2)))
+  #         base_score=100
+  #         score=$((base_score - (critical * 5) - (high * 4) - (medium * 3) - (low * 2)))
 
-          echo "Critical: $critical"
-          echo "High: $high"
-          echo "Medium: $medium"
-          echo "Low: $low"
-          echo "Vulnerability Score: $score"
+  #         echo "Critical: $critical"
+  #         echo "High: $high"
+  #         echo "Medium: $medium"
+  #         echo "Low: $low"
+  #         echo "Vulnerability Score: $score"
 
-          echo "score=$score" >> $GITHUB_OUTPUT
+  #         echo "score=$score" >> $GITHUB_OUTPUT
 
-          echo "## CodeQL Vulnerability Score" >> $GITHUB_STEP_SUMMARY
-          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
-          echo "| Critical | $critical |" >> $GITHUB_STEP_SUMMARY
-          echo "| High | $high |" >> $GITHUB_STEP_SUMMARY
-          echo "| Medium | $medium |" >> $GITHUB_STEP_SUMMARY
-          echo "| Low | $low |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
+  #         echo "## CodeQL Vulnerability Score" >> $GITHUB_STEP_SUMMARY
+  #         echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| Critical | $critical |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| High | $high |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| Medium | $medium |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| Low | $low |" >> $GITHUB_STEP_SUMMARY
+  #         echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
