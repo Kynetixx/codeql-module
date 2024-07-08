@@ -9,7 +9,6 @@ on:
 
 jobs:
   run-codeql:
-    needs: identify-languages
     runs-on: ubuntu-latest
     strategy:
       matrix:
