@@ -34,7 +34,7 @@ jobs:
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
-          const codeqlLanguageMapping=${{ JSON.stringify({
+          const codeqlLanguageMapping={
               "csharp": "csharp",
               "c#": "csharp",
               "cpp": "cpp",
@@ -47,7 +47,7 @@ jobs:
               "python": "python",
               "ruby": "ruby",
               "swift": "swift"
-          }) }};
+          };
           console.log('cc', codeqlLanguageMapping)
           const langResponse=${{ toJson(steps.get_languages.outputs.data) }};
           let languages=Object.keys(langResponse).filter(lang => codeqlLanguageMapping[lang]);
