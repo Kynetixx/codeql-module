@@ -1,10 +1,11 @@
 name: CodeQL-Analysis
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_call:
+    outputs:
+      score:
+        description: "Total score"
+        value: ${{ jobs.run-codeql.outputs.score }}
 
 jobs:
   identify-languages:
