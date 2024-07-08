@@ -26,16 +26,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Load language mapping
-        id: load_mapping
+      - name: Define language mapping
+        id: define_mapping
         run: |
-          mapping=$(cat .github/codeqlLanguageMapping.json)
-          echo "language_mapping=$mapping" >> $GITHUB_OUTPUT
+          echo '{
+            "csharp": "csharp",
+            "c#": "csharp",
+            "cpp": "cpp",
+            "c": "cpp",
+            "c++": "cpp",
+            "go": "go",
+            "java": "java",
+            "javascript": "javascript",
+            "typescript": "javascript",
+            "python": "python",
+            "ruby": "ruby",
+            "swift": "swift"
+          }' > codeqlLanguageMapping.json
 
       - name: Filter languages based on mapping
         id: filter_languages
         run: |
-          mapping='${{ steps.load_mapping.outputs.language_mapping }}'
+          mapping=$(cat codeqlLanguageMapping.json)
           languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]')
           filtered_languages=$(echo "$languages" | while read lang; do
             mapped_lang=$(echo "$mapping" | jq -r --arg lang "$lang" '.[$lang]')
