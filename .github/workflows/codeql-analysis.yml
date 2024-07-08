@@ -8,22 +8,12 @@ on:
         value: ${{ jobs.run-codeql.outputs.score }}
 
 jobs:
-  identify-languages:
-    runs-on: ubuntu-latest
-    outputs:
-      languages: ${{ steps.list-languages.outputs.languages }}
-    steps:
-      - uses: austenstone/list-repository-languages@main
-        id: list-languages
-        with:
-          codeql: 'true'
-
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        language: ${{ fromJSON(needs.identify-languages.outputs.languages) }}
+        language: ['python', 'swift', 'javascript']
     permissions:
       security-events: write
       actions: read
