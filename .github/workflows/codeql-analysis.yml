@@ -2,64 +2,66 @@ name: CodeQL-Analysis
 
 on:
   workflow_call:
+
     outputs:
       score:
         description: "Total score"
         value: ${{ jobs.run-codeql.outputs.score }}
 jobs:
+  identify-languages:
+    runs-on: ubuntu-latest
   run-codeql:
+    needs: identify-languages
     runs-on: ubuntu-latest
     outputs:
-      score: ${{ steps.parse-sarif.outputs.score }}
-    timeout-minutes: 360
+      score:  ${{ steps.parse-sarif.outputs.score }}
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       security-events: write
       actions: read
       contents: read
+    strategy:
+      matrix:
+        language: ${{ fromJSON(needs.identify-languages.outputs.languages) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
-
+        with:
+          languages: ${{ matrix.language }}
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
-
       - name: Perform CodeQL Analysis
         id: run-codeql
         uses: github/codeql-action/analyze@v3
-
+        with:
+          category: ${{ matrix.language }}
       - name: Download Analysis Results
         run: |
           mkdir -p codeql-results
-          cp ${{ steps.run-codeql.outputs.sarif }} codeql-results/results.sarif
-
+          cp -r ${{ steps.run-codeql.outputs.sarif-output }} codeql-results/results-${{ matrix.language }}.sarif
       - name: Parse SARIF and Compute Vulnerability Score
         id: parse-sarif
         run: |
-          results_path="codeql-results/results.sarif"
-
+          language=$(echo "${{ matrix.language }}" | tr '[:upper:]' '[:lower:]')
+          results_path="codeql-results/results-${{ matrix.language }}.sarif/${language}.sarif"
+          
           # Parse the SARIF file to extract vulnerabilities and count based on severity levels
           critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
           high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
           medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
           low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
-
           # Calculate the vulnerability score
           base_score=100
           score=$((base_score - (critical * 5) - (high * 4) - (medium * 3) - (low * 2)))
-          score=$((score < 0 ? 0 : score))  # Ensure score doesn't go below 0
-
           echo "Critical: $critical"
           echo "High: $high"
           echo "Medium: $medium"
           echo "Low: $low"
           echo "Vulnerability Score: $score"
-
           # Using $GITHUB_OUTPUT to set outputs
           echo "score=$score" >> $GITHUB_OUTPUT
-
           # Generate Markdown table
           echo "## CodeQL Vulnerability Score" >> $GITHUB_STEP_SUMMARY
           echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
