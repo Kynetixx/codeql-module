@@ -14,7 +14,7 @@ jobs:
       languages: ${{ steps.filter_languages.outputs.filtered_languages }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get languages
         uses: octokit/request-action@v2.x
@@ -30,16 +30,13 @@ jobs:
         id: filter_languages
         run: |
           declare -A language_map=( ["Python"]="python" ["JavaScript"]="javascript" ["TypeScript"]="javascript-typescript" ["C"]="c" ["Ruby"]="ruby" ["Swift"]="swift" ["Kotlin"]="kotlin" ["Java"]="java-kotlin" )
-          languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]')
-          filtered_languages=()
-          for lang in $languages; do
+          filtered_languages=$(echo '${{ steps.get_languages.outputs.data }}' | jq -r 'keys[]' | while read lang; do
             if [[ -n "${language_map[$lang]}" ]]; then
-              filtered_languages+=("${language_map[$lang]}")
+              echo "${language_map[$lang]}"
             fi
-          done
-          filtered_languages_json=$(printf '%s\n' "${filtered_languages[@]}" | jq -R . | jq -s .)
-          echo "Filtered languages: $filtered_languages_json"
-          echo "filtered_languages=$filtered_languages_json" >> $GITHUB_OUTPUT
+          done | jq -R . | jq -s .)
+          echo "Filtered languages: $filtered_languages"
+          echo "filtered_languages=$filtered_languages" >> $GITHUB_OUTPUT
 
   run-codeql:
     needs: identify-languages
