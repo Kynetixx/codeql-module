@@ -25,9 +25,13 @@ jobs:
           repo: ${{ github.event.repository.name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
-   
 
+      - name: Filter languages based on mapping
+        id: filter_languages
+        run: |
+          languages=${{ toJson(steps.get_languages.outputs.data) }};
+          echo "Languages: $languages"
+  
   # run-codeql:
   #   runs-on: ubuntu-latest
   #   strategy:
