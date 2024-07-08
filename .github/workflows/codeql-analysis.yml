@@ -8,6 +8,20 @@ on:
         value: ${{ jobs.run-codeql.outputs.score }}
 
 jobs:
+  logLatestRelease:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: octokit/request-action@v2.x
+        id: get_languages
+        with:
+          route: GET /repos/{owner}/{repo}/languages
+          owner: octokit
+          repo: request-action
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+      - run: "echo latest release: '${{ steps.get_languages.outputs.data }}'"
+
   run-codeql:
     runs-on: ubuntu-latest
     strategy:
