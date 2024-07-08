@@ -14,7 +14,9 @@ jobs:
       - uses: octokit/request-action@v2.x
         id: get_languages
         with:
-          route: GET `/repos/${{ github.repository }}/languages`
+          route: GET /repos/{owner}/{repo}/languages
+          owner: mariamiah
+          repo: codeqlpractice
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
