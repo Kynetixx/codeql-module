@@ -11,17 +11,12 @@ jobs:
   identify-languages:
     runs-on: ubuntu-latest
     outputs:
-      languages: ${{ steps.detect-languages.outputs.languages }}
+      languages: ${{ steps.list-languages.outputs.languages }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Identify Languages
-        id: detect-languages
-        run: |
-          languages=$(github/codeql-action/autobuild --check-language | awk -F' ' '{print $2}')
-          echo "Detected languages: $languages"
-          echo "languages=${languages}" >> $GITHUB_OUTPUT
+      - uses: austenstone/list-repository-languages@main
+        id: list-languages
+        with:
+          codeql: 'true'
 
   run-codeql:
     needs: identify-languages
