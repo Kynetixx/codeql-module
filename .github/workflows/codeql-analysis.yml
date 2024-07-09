@@ -57,7 +57,7 @@ jobs:
 
   run-codeql:
     needs: identify-languages
-    runs-on: ${{ matrix.language == 'swift' && 'macos-latest' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
@@ -79,24 +79,26 @@ jobs:
         if: matrix.language == 'swift'
         run: |
           echo "${{ inputs.projects }}" | jq -c '.[]' | while read -r project; do
-          scheme=$(echo "$project" | jq -r '.scheme')
-          xcodeproj=$(echo "$project" | jq -r '.project')
+            scheme=$(echo "$project" | jq -r '.scheme')
+            xcodeproj=$(echo "$project" | jq -r '.project')
 
-          echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
+            echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
 
-          # Setup Ruby and Bundler
-          brew install ruby
-          gem install bundler
-          bundle install
+            # Setup Ruby and Bundler
+            brew install ruby
+            gem install bundler
+            bundle install
 
-          # Prepare the simulator
-          SIMULATOR=$(swift Scripts/latestSimulator.swift)
-          swift Scripts/prepareSimulator.swift $SIMULATOR
+            # Prepare the simulator
+            SIMULATOR=$(swift Scripts/latestSimulator.swift)
+            swift Scripts/prepareSimulator.swift $SIMULATOR
 
-          # Build the project
-          set -eo pipefail
-          xcodebuild -scheme "$scheme" -derivedDataPath "./DerivedData" build -destination "platform=iOS Simulator,name=${{ inputs.simulator }}" -UseModernBuildSystem=YES -project "$xcodeproj" | xcpretty
-        done
+            # Build the project
+            set -eo pipefail
+            xcodebuild -scheme "$scheme" -derivedDataPath "./DerivedData" build -destination "platform=iOS Simulator,name=${{ inputs.simulator }}" -UseModernBuildSystem=YES -project "$xcodeproj" | xcpretty
+
+          done
+
       - name: Autobuild
         if: matrix.language != 'swift'
         uses: github/codeql-action/autobuild@v3
