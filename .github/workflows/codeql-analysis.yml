@@ -86,7 +86,7 @@ jobs:
             xcodeproj=$(echo "$project_json" | jq -r '.project')
 
             echo "Building and testing project $xcodeproj with scheme $scheme"
-            uses: ./.github/actions/swift-build-test
+            uses: ./.github/actions/swift-build-action
             with:
               scheme: $scheme
               project: $xcodeproj
