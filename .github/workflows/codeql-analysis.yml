@@ -134,12 +134,3 @@ jobs:
           echo "| Medium | $medium |" >> $GITHUB_STEP_SUMMARY
           echo "| Low | $low |" >> $GITHUB_STEP_SUMMARY
           echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
-
-  post:
-    always:
-      - name: Archive Artifacts
-        if: matrix.language == 'swift'
-        uses: actions/upload-artifact@v3
-        with:
-          name: Test Logs
-          path: DerivedData/Logs/Test/**
