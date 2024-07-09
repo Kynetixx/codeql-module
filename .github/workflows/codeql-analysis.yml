@@ -5,8 +5,8 @@ on:
     inputs:
       projects:
         required: true
-        type: array
-        description: "List of projects with their schemes, test plans, and environments"
+        type: string
+        description: "JSON string of projects with their schemes, test plans, and environments"
       simulator:
         required: true
         type: string
@@ -78,20 +78,17 @@ jobs:
       - name: Build and Test Swift Projects
         if: matrix.language == 'swift'
         run: |
-          for project in ${{ inputs.projects }}; do
-            echo "::group::Building and Testing Project"
-            project_json=$(echo "$project" | jq -c '.')
-            echo "$project_json"
-            scheme=$(echo "$project_json" | jq -r '.scheme')
-            xcodeproj=$(echo "$project_json" | jq -r '.project')
+          projects=${{ inputs.projects }}
+          for project in $(echo "${projects}" | jq -c '.[]'); do
+            scheme=$(echo "${project}" | jq -r '.scheme')
+            xcodeproj=$(echo "${project}" | jq -r '.project')
 
-            echo "Building and testing project $xcodeproj with scheme $scheme"
+            echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
             uses: ./.github/actions/swift-build-action
             with:
-              scheme: $scheme
-              project: $xcodeproj
+              scheme: ${scheme}
+              project: ${xcodeproj}
               simulator: ${{ inputs.simulator }}
-            echo "::endgroup::"
           done
 
       - name: Autobuild
@@ -110,27 +107,27 @@ jobs:
         run: |
           results_path=$(echo ${{ steps.run-codeql.outputs.sarif }} | jq -r '.["results.sarif"]')
 
-          critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
-          high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
-          medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
-          low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
+          critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' ${results_path})
+          high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' ${results_path})
+          medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' ${results_path})
+          low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' ${results_path})
 
           base_score=100
           score=$((base_score - (critical * 5) - (high * 4) - (medium * 3) - (low * 2)))
 
-          echo "Critical: $critical"
-          echo "High: $high"
-          echo "Medium: $medium"
-          echo "Low: $low"
-          echo "Vulnerability Score: $score"
+          echo "Critical: ${critical}"
+          echo "High: ${high}"
+          echo "Medium: ${medium}"
+          echo "Low: ${low}"
+          echo "Vulnerability Score: ${score}"
 
-          echo "score=$score" >> $GITHUB_OUTPUT
+          echo "score=${score}" >> $GITHUB_OUTPUT
 
           echo "## CodeQL Vulnerability Score" >> $GITHUB_STEP_SUMMARY
           echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
           echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
-          echo "| Critical | $critical |" >> $GITHUB_STEP_SUMMARY
-          echo "| High | $high |" >> $GITHUB_STEP_SUMMARY
-          echo "| Medium | $medium |" >> $GITHUB_STEP_SUMMARY
-          echo "| Low | $low |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Critical | ${critical} |" >> $GITHUB_STEP_SUMMARY
+          echo "| High | ${high} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Medium | ${medium} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Low | ${low} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Score** | **${score}** |" >> $GITHUB_STEP_SUMMARY
