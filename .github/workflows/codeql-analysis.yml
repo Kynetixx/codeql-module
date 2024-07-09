@@ -54,8 +54,6 @@ jobs:
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
-    container:
-      image: swift:5.3
     strategy:
       matrix:
         language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
