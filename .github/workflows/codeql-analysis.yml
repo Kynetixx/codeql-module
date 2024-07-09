@@ -78,7 +78,7 @@ jobs:
       - name: Build and Test Swift Projects
         if: matrix.language == 'swift'
         run: |
-          echo "${{ inputs.projects }}" | jq -c '.[]' | while read -r project; do
+          echo '${{ inputs.projects }}' | jq -c '.[]' | while IFS= read -r project; do
             scheme=$(echo "$project" | jq -r '.scheme')
             xcodeproj=$(echo "$project" | jq -r '.project')
 
