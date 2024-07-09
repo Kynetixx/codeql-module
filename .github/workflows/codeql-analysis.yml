@@ -2,15 +2,13 @@ name: CodeQL-Analysis
 
 on:
   workflow_call:
-    inputs:
-      project:
-        required: true
-        type: string
-        description: "JSON string of a project with its scheme, test plan, and environment"
-
+    outputs:
+      score:
+        description: "Total score"
+        value: ${{ jobs.run-codeql.outputs.score }}
 jobs:
   identify-languages:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       languages: ${{ steps.filter_languages.outputs.filtered_languages }}
     steps:
@@ -33,27 +31,24 @@ jobs:
         with:
           script: |
             const languageMapping = {
-              "c": "cpp",
               "go": "go",
-              "java": "java",
-              "javascript": "javascript",
-              "typescript": "typescript",
+              "kotlin": "java-kotlin",
+              "javascript": "javascript-typescript",
+              "typescript": "javascript-typescript",
               "python": "python",
-              "ruby": "ruby",
-              "swift": "swift"
+              "ruby": "ruby"
             };
 
             const languagesData = JSON.parse(process.env.LANGUAGES_DATA);
             const languages = Object.keys(languagesData).map(lang => lang.toLowerCase().trim());
             const filteredLanguages = [...new Set(languages.map(lang => languageMapping[lang]).filter(Boolean))];
-
             core.setOutput('filtered_languages', JSON.stringify(filteredLanguages));
         env:
           LANGUAGES_DATA: ${{ steps.get_languages.outputs.data }}
 
   run-codeql:
     needs: identify-languages
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
@@ -71,20 +66,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Build and Test Swift Project
-        if: matrix.language == 'swift'
-        run: |
-          project='${{ inputs.project }}'
-          scheme=$(echo "$project" | jq -r '.scheme')
-          xcodeproj=$(echo "$project" | jq -r '.project')
-
-          echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
-
-          # Build the project
-          xcodebuild -scheme "$scheme" -project "$xcodeproj" build
-
       - name: Autobuild
-        if: matrix.language != 'swift'
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
@@ -98,28 +80,23 @@ jobs:
         id: parse-sarif
         run: |
           results_path=$(echo ${{ steps.run-codeql.outputs.sarif }} | jq -r '.["results.sarif"]')
+          
+          # Parse the SARIF file to extract vulnerabilities and count based on severity levels
+          critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' $results_path)
+          high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' $results_path)
+          medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' $results_path)
+          low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' $results_path)
 
-          critical=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 9)] | length' ${results_path})
-          high=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 7 and .properties["security-severity"] < 9)] | length' ${results_path})
-          medium=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 4 and .properties["security-severity"] < 7)] | length' ${results_path})
-          low=$(jq '[.runs[].results[] | select(.properties["security-severity"] >= 0.1 and .properties["security-severity"] < 4)] | length' ${results_path})
-
+          # Calculate the vulnerability score
           base_score=100
           score=$((base_score - (critical * 5) - (high * 4) - (medium * 3) - (low * 2)))
 
-          echo "Critical: ${critical}"
-          echo "High: ${high}"
-          echo "Medium: ${medium}"
-          echo "Low: ${low}"
-          echo "Vulnerability Score: ${score}"
+          echo "Vulnerability Score: $score"
 
-          echo "score=${score}" >> $GITHUB_OUTPUT
+          # Using $GITHUB_OUTPUT to set outputs
+          echo "score=$score" >> $GITHUB_OUTPUT
 
+          # Generate Markdown table
           echo "## CodeQL Vulnerability Score" >> $GITHUB_STEP_SUMMARY
-          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
-          echo "| Critical | ${critical} |" >> $GITHUB_STEP_SUMMARY
-          echo "| High | ${high} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Medium | ${medium} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Low | ${low} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Score** | **${score}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
+          
