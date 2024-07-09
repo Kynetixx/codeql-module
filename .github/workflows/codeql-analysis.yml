@@ -3,10 +3,10 @@ name: CodeQL-Analysis
 on:
   workflow_call:
     inputs:
-      projects:
+      project:
         required: true
         type: string
-        description: "JSON string of projects with their schemes, test plans, and environments"
+        description: "JSON string of a project with its scheme, test plan, and environment"
       simulator:
         required: true
         type: string
@@ -58,6 +58,8 @@ jobs:
   run-codeql:
     needs: identify-languages
     runs-on: ubuntu-latest
+    container:
+      image: swift:5.7
     strategy:
       matrix:
         language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
@@ -75,24 +77,17 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Build and Test Swift Projects
+      - name: Build and Test Swift Project
         if: matrix.language == 'swift'
         run: |
-          echo '${{ inputs.projects }}' | jq -c '.[]' | while read -r project; do
-            scheme=$(echo "$project" | jq -r '.scheme')
-            xcodeproj=$(echo "$project" | jq -r '.project')
+          project=${{ inputs.project }}
+          scheme=$(echo "$project" | jq -r '.scheme')
+          xcodeproj=$(echo "$project" | jq -r '.project')
 
-            echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
+          echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
 
-            # Setup Ruby and Bundler
-            brew install ruby
-            gem install bundler
-            bundle install
-
-            # Build the project
-            set -eo pipefail
-            xcodebuild -scheme "$scheme" -derivedDataPath "./DerivedData" build -destination "platform=iOS Simulator,name=${{ inputs.simulator }}" -UseModernBuildSystem=YES -project "$xcodeproj" | xcpretty
-          done
+          # Build the project
+          swift build --package-path "$xcodeproj"
 
       - name: Autobuild
         if: matrix.language != 'swift'
