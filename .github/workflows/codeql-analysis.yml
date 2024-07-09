@@ -53,6 +53,8 @@ jobs:
       matrix:
         language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
       fail-fast: false
+    outputs:
+      score: ${{ steps.parse-sarif.outputs.score }}
     permissions:
       security-events: write
       actions: read
