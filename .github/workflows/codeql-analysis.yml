@@ -71,10 +71,6 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Setup Swift
-        if: matrix.language == 'swift'
-        uses: fwal/setup-swift@v1
-
       - name: Build and Test Swift Project
         if: matrix.language == 'swift'
         run: |
@@ -85,7 +81,7 @@ jobs:
           echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
 
           # Build the project
-          swift build --package-path "$xcodeproj"
+          xcodebuild -scheme "$scheme" -project "$xcodeproj" build
 
       - name: Autobuild
         if: matrix.language != 'swift'
