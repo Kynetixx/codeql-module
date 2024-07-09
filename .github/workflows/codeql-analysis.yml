@@ -92,8 +92,6 @@ jobs:
             with:
               scheme: $scheme
               project: $xcodeproj
-              test_plan: $test_plan
-              alinghi_testenvironment: $alinghi_testenvironment
               simulator: ${{ inputs.simulator }}
             echo "::endgroup::"
           done
