@@ -8,7 +8,7 @@ on:
         value: ${{ jobs.run-codeql.outputs.score }}
 jobs:
   identify-languages:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     outputs:
       languages: ${{ steps.filter_languages.outputs.filtered_languages }}
     steps:
@@ -48,7 +48,7 @@ jobs:
 
   run-codeql:
     needs: identify-languages
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
@@ -99,4 +99,3 @@ jobs:
           # Generate Markdown table
           echo "## CodeQL Vulnerability Score" >> $GITHUB_STEP_SUMMARY
           echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
-          
