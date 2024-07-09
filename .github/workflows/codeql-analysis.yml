@@ -2,10 +2,15 @@ name: CodeQL-Analysis
 
 on:
   workflow_call:
-    outputs:
-      score:
-        description: "Total score"
-        value: ${{ jobs.run-codeql.outputs.score }}
+    inputs:
+      projects:
+        required: true
+        type: array
+        description: "List of projects with their schemes, test plans, and environments"
+      simulator:
+        required: true
+        type: string
+        description: "The simulator ID or name to use"
 
 jobs:
   identify-languages:
@@ -52,7 +57,7 @@ jobs:
 
   run-codeql:
     needs: identify-languages
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.language == 'swift' && 'macos-latest' || 'ubuntu-latest' }}
     strategy:
       matrix:
         language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
@@ -70,7 +75,31 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
+      - name: Build and Test Swift Projects
+        if: matrix.language == 'swift'
+        run: |
+          for project in ${{ inputs.projects }}; do
+            echo "::group::Building and Testing Project"
+            project_json=$(echo "$project" | jq -c '.')
+            echo "$project_json"
+            scheme=$(echo "$project_json" | jq -r '.scheme')
+            xcodeproj=$(echo "$project_json" | jq -r '.project')
+            test_plan=$(echo "$project_json" | jq -r '.test_plan')
+            alinghi_testenvironment=$(echo "$project_json" | jq -r '.alinghi_testenvironment')
+
+            echo "Building and testing project $xcodeproj with scheme $scheme"
+            uses: ./.github/actions/swift-build-test
+            with:
+              scheme: $scheme
+              project: $xcodeproj
+              test_plan: $test_plan
+              alinghi_testenvironment: $alinghi_testenvironment
+              simulator: ${{ inputs.simulator }}
+            echo "::endgroup::"
+          done
+
       - name: Autobuild
+        if: matrix.language != 'swift'
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
@@ -109,3 +138,12 @@ jobs:
           echo "| Medium | $medium |" >> $GITHUB_STEP_SUMMARY
           echo "| Low | $low |" >> $GITHUB_STEP_SUMMARY
           echo "| **Score** | **$score** |" >> $GITHUB_STEP_SUMMARY
+
+  post:
+    always:
+      - name: Archive Artifacts
+        if: matrix.language == 'swift'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Test Logs
+          path: DerivedData/Logs/Test/**
