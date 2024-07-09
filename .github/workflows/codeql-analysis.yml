@@ -89,10 +89,6 @@ jobs:
             gem install bundler
             bundle install
 
-            # Prepare the simulator
-            SIMULATOR=$(swift Scripts/latestSimulator.swift)
-            swift Scripts/prepareSimulator.swift $SIMULATOR
-
             # Build the project
             set -eo pipefail
             xcodebuild -scheme "$scheme" -derivedDataPath "./DerivedData" build -destination "platform=iOS Simulator,name=${{ inputs.simulator }}" -UseModernBuildSystem=YES -project "$xcodeproj" | xcpretty
