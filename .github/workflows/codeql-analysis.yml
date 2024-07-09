@@ -78,19 +78,25 @@ jobs:
       - name: Build and Test Swift Projects
         if: matrix.language == 'swift'
         run: |
-          projects=${{ inputs.projects }}
-          for project in $(echo "${projects}" | jq -c '.[]'); do
-            scheme=$(echo "${project}" | jq -r '.scheme')
-            xcodeproj=$(echo "${project}" | jq -r '.project')
+          echo "${{ inputs.projects }}" | jq -c '.[]' | while read -r project; do
+          scheme=$(echo "$project" | jq -r '.scheme')
+          xcodeproj=$(echo "$project" | jq -r '.project')
 
-            echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
-            uses: ./.github/actions/swift-build-action
-            with:
-              scheme: ${scheme}
-              project: ${xcodeproj}
-              simulator: ${{ inputs.simulator }}
-          done
+          echo "Building and testing project ${xcodeproj} with scheme ${scheme}"
 
+          # Setup Ruby and Bundler
+          brew install ruby
+          gem install bundler
+          bundle install
+
+          # Prepare the simulator
+          SIMULATOR=$(swift Scripts/latestSimulator.swift)
+          swift Scripts/prepareSimulator.swift $SIMULATOR
+
+          # Build the project
+          set -eo pipefail
+          xcodebuild -scheme "$scheme" -derivedDataPath "./DerivedData" build -destination "platform=iOS Simulator,name=${{ inputs.simulator }}" -UseModernBuildSystem=YES -project "$xcodeproj" | xcpretty
+        done
       - name: Autobuild
         if: matrix.language != 'swift'
         uses: github/codeql-action/autobuild@v3
