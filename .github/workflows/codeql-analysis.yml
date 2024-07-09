@@ -84,8 +84,6 @@ jobs:
             echo "$project_json"
             scheme=$(echo "$project_json" | jq -r '.scheme')
             xcodeproj=$(echo "$project_json" | jq -r '.project')
-            test_plan=$(echo "$project_json" | jq -r '.test_plan')
-            alinghi_testenvironment=$(echo "$project_json" | jq -r '.alinghi_testenvironment')
 
             echo "Building and testing project $xcodeproj with scheme $scheme"
             uses: ./.github/actions/swift-build-test
