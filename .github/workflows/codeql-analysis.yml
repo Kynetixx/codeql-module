@@ -39,8 +39,7 @@ jobs:
               "typescript": "typescript",
               "python": "python",
               "ruby": "ruby",
-              "swift": "swift",
-              "objective-c": "cpp"
+              "swift": "swift"
             };
 
             const languagesData = JSON.parse(process.env.LANGUAGES_DATA);
