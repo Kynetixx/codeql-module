@@ -73,10 +73,16 @@ jobs:
           distribution: 'corretto'
           java-version: 17
 
-      - name: Run java build
+      - name: Setup Docker
         if: matrix.language == 'java'
         run: |
-          ./gradlew build
+          docker buildx create --use
+          docker build --platform linux/amd64 -t android-builder:latest .
+      
+      - name: Build the project
+        if: matrix.language == 'java'
+        run: |
+          docker run --platform linux/amd64 --network host --rm -v "$PWD":/mnt/volume/ -w /mnt/volume android-builder:latest ./gradlew build
 
       - name: Perform CodeQL Analysis
         id: run-codeql
