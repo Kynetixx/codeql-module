@@ -43,6 +43,7 @@ jobs:
 
             // Sort languages by size and take the top N
             const sortedLanguages = Object.entries(languagesData)
+              .slice(0,3)
               .map(([lang]) => lang.toLowerCase().trim());
 
             const filteredLanguages = [...new Set(sortedLanguages.map(lang => languageMapping[lang]).filter(Boolean))];
