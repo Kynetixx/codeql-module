@@ -40,7 +40,10 @@ jobs:
             };
 
             const languagesData = JSON.parse(process.env.LANGUAGES_DATA);
-            const languages = Object.keys(languagesData).map(lang => lang.toLowerCase().trim());
+            const sortedLanguages = Object.entries(languagesData)
+              .sort(([, sizeA], [, sizeB]) => sizeB - sizeA)
+              .slice(0, 3)
+              .map(([lang]) => lang.toLowerCase().trim());
             const filteredLanguages = [...new Set(languages.map(lang => languageMapping[lang]).filter(Boolean))];
             core.setOutput('filtered_languages', JSON.stringify(filteredLanguages));
         env:
