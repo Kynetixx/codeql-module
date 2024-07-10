@@ -42,13 +42,13 @@ jobs:
             const topN = parseInt(core.getInput('top-n'), 10) || 3;
 
             // Sort languages by size and take the top N
-            const sortedLanguages = Object.entries(languagesData)
-              .slice(0,3)
-              .map(([lang]) => lang.toLowerCase().trim());
+            const filteredLanguages = Object.keys(languagesData)
+              .map(lang => languageMapping[lang.toLowerCase().trim()])
+              .filter(Boolean);
 
-            const filteredLanguages = [...new Set(sortedLanguages.map(lang => languageMapping[lang]).filter(Boolean))];
 
-            core.setOutput('filtered_languages', JSON.stringify(filteredLanguages));
+            core.setOutput('filtered_languages', JSON.stringify(filteredLanguages.slice(0, topN)));
+
 
         env:
           LANGUAGES_DATA: ${{ steps.get_languages.outputs.data }}
