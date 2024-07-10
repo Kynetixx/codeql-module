@@ -24,9 +24,8 @@ jobs:
       - name: Set Languages
         id: set-languages
         run: |
-          languages_json=$(echo "${{ inputs.languages }}" | jq -R 'split("\n") | map(trim) | map(select(length > 0)) | tojson')
+          languages_json=$(echo "${{ inputs.languages }}" | awk '{$1=$1};1' | jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "languages-json=$languages_json" >> $GITHUB_OUTPUT
-  
   run-codeql:
     needs: get-languages
     runs-on: ${{ (matrix.language == 'swift' && fromJSON('[ "ubuntu-latest", "macOS" ]')) || 'ubuntu-latest' }}
