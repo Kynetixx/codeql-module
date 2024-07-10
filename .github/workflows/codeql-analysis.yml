@@ -2,78 +2,65 @@ name: CodeQL-Analysis
 
 on:
   workflow_call:
+    inputs:
+      config-file:
+        required: false
+        type: string
+        description: "The path to the CodeQL configuration file"
+      languages:
+        required: true
+        type: string
+        description: "A comma-seperated list of languages to analyze"
     outputs:
       score:
         description: "Total score"
         value: ${{ jobs.run-codeql.outputs.score }}
 jobs:
-  identify-languages:
+  get-languages:
     runs-on: ubuntu-latest
     outputs:
-      languages: ${{ steps.filter_languages.outputs.filtered_languages }}
+      languages: ${{ steps.set-languages.outputs.languages-json }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Get languages
-        uses: octokit/request-action@v2.x
-        id: get_languages
-        with:
-          route: GET /repos/{owner}/{repo}/languages
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Define language mapping and filter languages
-        id: filter_languages
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const languageMapping = {
-              "go": "go",
-              "kotlin": "java-kotlin",
-              "javascript": "javascript-typescript",
-              "typescript": "javascript-typescript",
-              "python": "python",
-              "ruby": "ruby"
-            };
-            const languagesData = JSON.parse(process.env.LANGUAGES_DATA || '{}');
-            const topN = parseInt(core.getInput('top-n'), 10) || 3;
-
-            // Sort languages by size and take the top N
-            const filteredLanguages = Object.keys(languagesData)
-              .map(lang => languageMapping[lang.toLowerCase().trim()])
-              .filter(Boolean);
-
-
-            core.setOutput('filtered_languages', JSON.stringify(filteredLanguages.slice(0, topN)));
-
-
-        env:
-          LANGUAGES_DATA: ${{ steps.get_languages.outputs.data }}
-
+      - name: Set Languages
+        id: set-languages
+        run: |
+          languages_json=$(echo "${{ inputs.languages }}" | jq -R 'split("\n") | map(trim) | map(select(length > 0)) | tojson')
+          echo "languages-json=$languages_json" >> $GITHUB_OUTPUT
+  
   run-codeql:
-    needs: identify-languages
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        language: ${{ fromJson(needs.identify-languages.outputs.languages) }}
-      fail-fast: false
+    needs: get-languages
+    runs-on: ${{ (matrix.language == 'swift' && fromJSON('[ "ubuntu-latest", "macOS" ]')) || 'ubuntu-latest' }}
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     outputs:
       score: ${{ steps.parse-sarif.outputs.score }}
     permissions:
       security-events: write
       actions: read
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJson(needs.get-languages.outputs.languages) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'corretto'
+          java-version: 17
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          config-file: ${{ inputs.config-file }}
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
@@ -82,7 +69,7 @@ jobs:
         id: run-codeql
         uses: github/codeql-action/analyze@v3
         with:
-          category: ${{ matrix.language }}
+          category: "/language:${{matrix.language}}"
           output: sarif
 
       - name: Parse SARIF and Compute Vulnerability Score
