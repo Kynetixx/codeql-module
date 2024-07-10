@@ -38,14 +38,19 @@ jobs:
               "python": "python",
               "ruby": "ruby"
             };
+            const languagesData = JSON.parse(process.env.LANGUAGES_DATA || '{}');
+            const topN = parseInt(core.getInput('top-n'), 10) || 3;
 
-            const languagesData = JSON.parse(process.env.LANGUAGES_DATA);
+            // Sort languages by size and take the top N
             const sortedLanguages = Object.entries(languagesData)
               .sort(([, sizeA], [, sizeB]) => sizeB - sizeA)
-              .slice(0, 3)
+              .slice(0, topN)
               .map(([lang]) => lang.toLowerCase().trim());
+
             const filteredLanguages = [...new Set(sortedLanguages.map(lang => languageMapping[lang]).filter(Boolean))];
+
             core.setOutput('filtered_languages', JSON.stringify(filteredLanguages));
+
         env:
           LANGUAGES_DATA: ${{ steps.get_languages.outputs.data }}
 
