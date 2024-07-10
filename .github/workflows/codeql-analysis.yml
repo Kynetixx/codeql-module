@@ -44,7 +44,7 @@ jobs:
               .sort(([, sizeA], [, sizeB]) => sizeB - sizeA)
               .slice(0, 3)
               .map(([lang]) => lang.toLowerCase().trim());
-            const filteredLanguages = [...new Set(languages.map(lang => languageMapping[lang]).filter(Boolean))];
+            const filteredLanguages = [...new Set(sortedLanguages.map(lang => languageMapping[lang]).filter(Boolean))];
             core.setOutput('filtered_languages', JSON.stringify(filteredLanguages));
         env:
           LANGUAGES_DATA: ${{ steps.get_languages.outputs.data }}
