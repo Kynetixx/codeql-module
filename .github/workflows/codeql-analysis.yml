@@ -73,6 +73,11 @@ jobs:
           distribution: 'corretto'
           java-version: 17
 
+      - name: Run java build
+        if: matrix.language == 'java'
+        run: |
+          ./gradlew build
+
       - name: Perform CodeQL Analysis
         id: run-codeql
         uses: github/codeql-action/analyze@v3
