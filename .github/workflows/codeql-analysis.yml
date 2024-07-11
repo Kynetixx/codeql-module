@@ -11,6 +11,10 @@ on:
         required: true
         type: string
         description: "A comma-seperated list of languages to analyze"
+      build-command:
+        required: false
+        type: string
+        description: "The build command to execute"
     outputs:
       score:
         description: "Total score"
@@ -76,27 +80,14 @@ jobs:
         if: matrix.language == 'java'
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'corretta'
 
 
-      - name: Setup Gradle
-        if: matrix.language == 'java'
-        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
 
-      - name: Build with Gradle
-        if: matrix.language == 'java'
-        run: ./android/gradlew -b ci.gradle package
-
-      - name: Setup Docker
-        if: matrix.language == 'java'
-        run: |
-          docker buildx create --use
-          docker build --platform linux/amd64 -t android-builder:latest .
-      
       - name: Build the project
         if: matrix.language == 'java'
         run: |
-          docker run --platform linux/amd64 --network host --rm -v "$PWD":/mnt/volume/ -w /mnt/volume android-builder:latest ./gradlew build
+          ${{ inputs.build-command }}
 
       - name: Perform CodeQL Analysis
         id: run-codeql
