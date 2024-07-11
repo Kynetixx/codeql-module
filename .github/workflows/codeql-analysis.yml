@@ -80,7 +80,7 @@ jobs:
         if: matrix.language == 'java'
         with:
           java-version: '17'
-          distribution: 'corretta'
+          distribution: 'corretto'
 
 
 
