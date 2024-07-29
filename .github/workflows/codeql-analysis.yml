@@ -7,11 +7,7 @@ on:
         required: false
         type: string
         description: "The path to the CodeQL configuration file"
-      languages:
-        required: true
-        type: string
-        description: "A comma-seperated list of languages to analyze"
-      build-command:
+      build-config:
         required: false
         type: string
         description: "The build command to execute"
@@ -28,7 +24,7 @@ jobs:
       - name: Set Languages
         id: set-languages
         run: |
-          languages_json=$(echo "${{ inputs.languages }}" | awk '{$1=$1};1' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          languages_json=$(echo "${{ inputs.build-config }}" | awk '{$1=$1};1' | jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "languages-json=$languages_json" >> $GITHUB_OUTPUT
   run-codeql:
     needs: get-languages
@@ -43,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ${{ fromJson(needs.get-languages.outputs.languages) }}
+        include: ${{ fromJson(needs.get-languages.outputs.languages) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -64,7 +60,6 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          config-file: ${{ inputs.config-file }}
 
       - name: Autobuild
         if: matrix.language != 'java'
@@ -76,12 +71,6 @@ jobs:
           java-version: '17'
           distribution: 'corretto'
 
-
-
-      - name: Build the project
-        if: matrix.language == 'java'
-        run: |
-          ${{ inputs.build-command }}
 
       - name: Perform CodeQL Analysis
         id: run-codeql
