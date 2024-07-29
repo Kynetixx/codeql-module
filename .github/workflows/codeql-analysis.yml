@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Set Languages
         id: set-matrix
-        run: echo "::set-output name=matrix::{\"include\":[{\"project\":\"foo\",\"config\":\"Debug\"},{\"project\":\"bar\",\"config\":\"Release\"}]}"
+        run: echo "::set-output name=matrix::${{ inputs.build-config }}"
 
   run-codeql:
     needs: get-languages
