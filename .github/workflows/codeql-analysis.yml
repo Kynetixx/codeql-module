@@ -25,16 +25,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Write build config to file
       run: |
         echo '${{ inputs.build-config }}' > build-config.json
         jq '.' build-config.json > formatted-build-config.json
         cat formatted-build-config.json
-
-      - name: Set Languages
-        id: set-matrix
-        run: |
-          echo "matrix=$(jq -c . < formatted-build-config.json )" >> $GITHUB_OUTPUT
 
   run-codeql:
     needs: get-languages
