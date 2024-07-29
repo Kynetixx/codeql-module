@@ -41,7 +41,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix: ${{fromJson(needs.get-languages.outputs.matrix)}}
+      matrix: ${{ fromJson(needs.get-languages.outputs.matrix) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
