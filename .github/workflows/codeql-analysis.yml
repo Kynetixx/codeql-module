@@ -28,8 +28,12 @@ jobs:
 
       - name: Write build config to file
         run: |
-          echo '${{ inputs.build-config }}' > build-config.json
-          jq '.' build-config.json > formatted-build-config.json
+          if [ -f "${{ inputs.build-config }}" ]; then
+            cat "${{ inputs.build-config }}" > formatted-build-config.json
+          else
+            echo '${{ inputs.build-config }}' > build-config.json
+            jq '.' build-config.json > formatted-build-config.json
+          fi
           cat formatted-build-config.json
 
       - name: Set Languages
