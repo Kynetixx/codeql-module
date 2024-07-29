@@ -15,6 +15,7 @@ on:
       score:
         description: "Total score"
         value: ${{ jobs.run-codeql.outputs.score }}
+
 jobs:
   get-languages:
     runs-on: ubuntu-latest
@@ -24,7 +25,7 @@ jobs:
       - name: Set Languages
         id: set-matrix
         run: |
-          echo ${{ inputs.build-config }}
+          echo "${{ inputs.build-config }}"
           echo "::set-output name=matrix::${{ inputs.build-config }}"
 
   run-codeql:
@@ -65,12 +66,12 @@ jobs:
         if: matrix.language != 'java'
         uses: github/codeql-action/autobuild@v3
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
         if: matrix.language == 'java'
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'corretto'
-
 
       - name: Perform CodeQL Analysis
         id: run-codeql
@@ -78,3 +79,10 @@ jobs:
         with:
           category: "/language:${{matrix.language}}"
           output: sarif
+
+      - name: Parse SARIF
+        id: parse-sarif
+        run: |
+          # Here you would parse the SARIF file and extract the score, adjust this as needed
+          score=$(jq '.runs[].results | length' codeql.sarif)
+          echo "::set-output name=score::$score"
