@@ -22,7 +22,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Set Languages
-        id: set-languages
+        id: set-matrix
         run: echo "::set-output name=matrix::{\"include\":[{\"project\":\"foo\",\"config\":\"Debug\"},{\"project\":\"bar\",\"config\":\"Release\"}]}"
 
   run-codeql:
@@ -37,8 +37,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.get-languages.outputs.languages) }}
+      matrix: ${{fromJson(needs.job1.outputs.matrix)}}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
