@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Set Languages
         id: set-matrix
-        run: echo '${{ github.event.inputs.build-config }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' | xargs -I '{}' echo "{}" >> "$GITHUB_OUTPUT"
+        run: echo 'matrix=${{ inputs.build-config }}' | jq -r 'to_entries[] | "\(.key)=\(.value)"' | xargs -I '{}' echo "{}" >> "$GITHUB_OUTPUT"
         # run: |
         #   echo "buildconfig: ${{ inputs.build-config }}"
         #   echo "matrix=$(jq -c . < ${{ inputs.build-config }})" >> $GITHUB_OUTPUT
