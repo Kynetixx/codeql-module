@@ -1,3 +1,4 @@
+
 name: CodeQL-Analysis
 
 on:
@@ -25,8 +26,8 @@ jobs:
       - name: Set Languages
         id: set-matrix
         run: |
-          echo "${{ inputs.build-config }}"
-          echo "::set-output name=matrix::${{ inputs.build-config }}"
+          echo "matrix=$(jq -c . <<< "${{ inputs.build-config }}")" >> $GITHUB_ENV
+          echo "::set-output name=matrix::${{ env.matrix }}"
 
   run-codeql:
     needs: get-languages
@@ -83,6 +84,5 @@ jobs:
       - name: Parse SARIF
         id: parse-sarif
         run: |
-          # Here you would parse the SARIF file and extract the score, adjust this as needed
           score=$(jq '.runs[].results | length' codeql.sarif)
           echo "::set-output name=score::$score"
