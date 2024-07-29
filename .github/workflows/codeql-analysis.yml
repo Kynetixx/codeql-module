@@ -23,7 +23,9 @@ jobs:
     steps:
       - name: Set Languages
         id: set-matrix
-        run: echo "::set-output name=matrix::${{ inputs.build-config }}"
+        run: |
+          echo ${{ inputs.build-config }}
+          echo "::set-output name=matrix::${{ inputs.build-config }}"
 
   run-codeql:
     needs: get-languages
