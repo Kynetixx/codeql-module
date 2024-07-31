@@ -26,20 +26,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Write build config to file
+      - name: Check Inputs
+        id: check-inputs
         run: |
-          if [ -f "${{ inputs.build-config }}" ]; then
-            cat "${{ inputs.build-config }}" > formatted-build-config.json
-          else
-            echo '${{ inputs.build-config }}' > build-config.json
-            jq '.' build-config.json > formatted-build-config.json
+          if [ -n "${{ inputs.languages }}" ] && [ -n "${{ inputs.build-config }}" ]; then
+            echo "Both 'languages' and 'build-config' cannot be provided at the same time."
+            exit 1
+          elif [ -z "${{ inputs.languages }}" ] && [ -z "${{ inputs.build-config }}" ]; then
+            echo "Either 'languages' or 'build-config' must be provided."
+            exit 1
           fi
-          cat formatted-build-config.json
 
-      - name: Set Languages
+      - name: Set Languages or Build Config
         id: set-matrix
         run: |
-          echo "matrix=$(jq -c . < formatted-build-config.json )" >> $GITHUB_OUTPUT
+          if [ -n "${{ inputs.languages }}" ]; then
+            languages_json=$(echo "${{ inputs.languages }}" | awk '{$1=$1};1' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "matrix={\"language\":$languages_json}" >> $GITHUB_OUTPUT
+          else
+            if [ -f "${{ inputs.build-config }}" ]; then
+              cat "${{ inputs.build-config }}" > formatted-build-config.json
+            else
+              echo '${{ inputs.build-config }}' > build-config.json
+              jq '.' build-config.json > formatted-build-config.json
+            fi
+            cat formatted-build-config.json
+            echo "matrix=$(jq -c '{ include: . }' formatted-build-config.json)" >> $GITHUB_OUTPUT
+            echo "$matrix"
+            echo "$formatted-build-config.json"
+          fi
 
   run-codeql:
     needs: get-languages
@@ -53,8 +68,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.get-languages.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.get-languages.outputs.matrix) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
