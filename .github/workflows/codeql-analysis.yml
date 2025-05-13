@@ -12,6 +12,9 @@ on:
         required: false
         type: string
         description: "The build command to execute"
+      languages:
+        required: false
+        type: string
     outputs:
       score:
         description: "Total score"
